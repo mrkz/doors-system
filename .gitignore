@@ -1,0 +1,2 @@
+*~	# todos los archivos temporales
+*.pyc	# ignorar todos los archivos bytecode

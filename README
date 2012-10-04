@@ -1,0 +1,6 @@
+Proyecto para automatización de acceso a puertas de un edificio,
+mediante el uso de RFID y arduino.
+
+Se añaden también en formato *.tar.gz las bibliotecas externas a python
+("pyserial 2.6", "mysql-connector-python-0.3.2-devel") que se necesitan
+para hacer funcionar el código
