@@ -44,9 +44,8 @@ class Window:
 		self.database = Connection()
 		# rutina para abrir puerto serial del arduino
 		self.connection_routine()
-		#self.arduino = serial.Serial('/dev/ttyACM0', 9600,timeout=0)
+		# se crea una rutina que se ejecuta cada segundo para leer del arduino
 		time = gobject.timeout_add(1000, self.read_id)
-		#self.arduino = Arduino()
 
 	# método para establecer propiedades de la ventana
 	def set_property(self,
@@ -132,8 +131,11 @@ class Window:
 				try:
 					# se toma el puerto del arduino conectado
 					port = device[0]
+					print arduinos
+					print port
 					# trata de crear conexión a arduino
 					self.arduino = serial.Serial(port, baudrate=9600, timeout=0)
+					self.arduino.write('1')
 					# si se conectó al puerto exitosamente se termina la rutina de conexión
 					if self.arduino.isOpen():
 						print "connected on port: %s" % port
@@ -154,11 +156,12 @@ class Window:
 					print "Error: port %s doesn\'t exists" % port
 			
 				# si el puerto no se pudo abrir, se lanza la excepción
+				#FIXME: El puerto se abrió pero se desconectó sin ser cerrado antes ↓↓
 				# SerialException y se prosigue a conectar otros posibles arduinos
 				except serial.serialutil.SerialException:
-					print "llegó hasta acá :v"
-					# no se hace nada
-					pass
+					print "Arduino desconectado violentamente >:("
+#					self.arduino.close()
+#					del self.arduino()
 		else:
 			if self.warning_flag == False:
 				self.create_warning_lector()
@@ -179,6 +182,7 @@ class Window:
 			self.warning_flag = True
 			self.warning_arduino.show()
 			self.statusbar_push_item(self.error_status_bar, """Error: Dispositivo lector no detectado""")
+
 
 	# método para mostrar ventana
 	def show(self):
@@ -205,18 +209,16 @@ class Window:
 		print "leí:",code				# RFID
 		if self.database.get_access(code, door = 1):
 			self.display_user(code, "Sin Nombre aún :v")
+			#TODO: mostrar datos del usuario en pantalla
 			# se envía bit para apertura de chapa
 			self.arduino.write('1')
 		else:
 			# Sin acceso
 			self.display_user()
 		#if code == "209365915":
-		#	self.display_user(code, "Simental Magaña Marcos Eleno Joaquín")
+		#	self.display_user(code, "<Nombre del usuario>")
 		#else:
 		#	self.display_user()
-		# TODO: llamar al método para revisar la base de datos
-		# si usuario existe, desplegar Código, Nombre, Ocupación, Hora de entrada
-		# si usuario no existe, desplegar "Acceso Denegado"
 	
 	# método para mostrar mensajes en la barra de estado
 	def statusbar_push_item(self, context_id, string):
@@ -264,12 +266,16 @@ class Window:
 				else:
 					#self.entry.set_text(string)
 					self.callback_code()
+			else:
+				self.arduino.close()
+				del self.arduino 
+				print "lero lero"
+				self.connection_routine()
 
 		# si no hay instancia del arduino (self.arduino) se lanza la excepción
 		# AttributeError y se muestra la alerta en interfaz de no hay arduino conectado
 		# y se llama la rutina de conexión
 		except AttributeError:
-			#TODO: mostrar alerta de que arduino no está conectado
 			print "Exodo del dialogo: ", self.warning_flag
 			if self.warning_flag == False:
 				self.create_warning_lector()
@@ -281,7 +287,6 @@ class Window:
 		# se lanza la excepción SerialException, se cerrará el puerto y se
 		# llama a la rutina de conexión
 		except serial.serialutil.SerialException:
-			#TODO: mostrar alerta de que arduino no está conectado
 			print "Error: Access Lector unplugged"
 			# mostrar dialogo de advertencia
 			if self.warning_flag == False:
